@@ -169,10 +169,8 @@ h1,h2,h3,h4,h5{font-family:'Syne',sans-serif}
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <div class="client-badge">🏔️ <span id="clientName">Summit Capital</span></div>
-      <div class="api-bar">
-        <input type="password" class="api-input" id="apiKeyInput" placeholder="sk-ant-... API key">
-        <button class="btn btn-green" style="padding:6px 12px;font-size:12px" onclick="saveKey()">Save</button>
-      </div>
+      <div id="apiKeyInput" style="display:none"></div>
+      <div id="keyStatus" style="font-size:11px;color:var(--muted)">⚙️ Add API key in Settings</div>
     </div>
   </div>
 
@@ -455,7 +453,7 @@ var FORMS = {
 
 // INIT
 window.onload = function() {
-  if (apiKey) { document.getElementById('apiKeyInput').value = apiKey; document.getElementById('settApiKey').value = apiKey; }
+  if (apiKey) { document.getElementById('settApiKey').value = apiKey; document.getElementById('keyStatus').innerHTML = '🔑 API key saved'; document.getElementById('keyStatus').style.color='var(--green)'; }
   var cn = lsG('clientName') || 'Summit Capital';
   document.getElementById('clientName').textContent = cn;
   document.getElementById('settClientName').value = cn;
@@ -923,8 +921,8 @@ function renderHist(){
 function cpyIdx(i){ if(histItems[i]) navigator.clipboard.writeText(histItems[i].text).then(function(){toast('Copied');}); }
 
 // SETTINGS
-function saveKey(){ var k=document.getElementById('apiKeyInput').value.trim(); if(!k){toast('Enter key');return;} apiKey=k; lsS('apiKey',k); toast('API key saved'); }
-function saveKeySettings(){ var k=document.getElementById('settApiKey').value.trim(); if(!k){toast('Enter key');return;} apiKey=k; lsS('apiKey',k); document.getElementById('apiKeyInput').value=k; toast('API key saved'); }
+function saveKey(){ var k=document.getElementById('settApiKey').value.trim(); if(!k){toast('Enter key');return;} apiKey=k; lsS('apiKey',k); document.getElementById('keyStatus').innerHTML='🔑 API key saved'; document.getElementById('keyStatus').style.color='var(--green)'; toast('API key saved ✓'); }
+function saveKeySettings(){ var k=document.getElementById('settApiKey').value.trim(); if(!k){toast('Enter key');return;} apiKey=k; lsS('apiKey',k); document.getElementById('keyStatus').innerHTML='🔑 API key saved'; document.getElementById('keyStatus').style.color='var(--green)'; toast('API key saved ✓'); }
 function saveClientNameSetting(){ var n=document.getElementById('settClientName').value.trim(); if(!n) return; lsS('clientName',n); document.getElementById('clientName').textContent=n; toast('Client name saved'); }
 function copyOut(){ if(!latestOut){toast('Nothing to copy');return;} navigator.clipboard.writeText(latestOut).then(function(){toast('Copied');}); }
 
