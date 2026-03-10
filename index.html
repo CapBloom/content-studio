@@ -848,7 +848,7 @@ function addTyping(){
 function rmTyping(){ var e=document.getElementById('typing'); if(e) e.remove(); }
 
 async function sendChat() {
-  var key=apiKey||document.getElementById('apiKeyInput').value.trim();
+  var key=apiKey||document.getElementById('settApiKey').value.trim();
   if(!key){ toast('Enter your API key first'); return; }
   var input=document.getElementById('chatInput');
   var typed=input.value.trim();
