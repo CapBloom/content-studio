@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapBloom Content Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--green:#36ca37;--green-dark:#28a829;--green-light:#edfaed;--green-mid:#c8f0c8;--bg:#f5f7f5;--surface:#fff;--border:#e0ebe0;--text:#1a1a1a;--muted:#6b7b6b;--sidebar-w:230px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+h1,h2,h3,h4,h5{font-family:'Syne',sans-serif}
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar-w);background:#111;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid #222}
+.sidebar-logo img{height:26px}
+.logo-fallback{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:#36ca37;display:none}
+.tagline{font-size:10px;color:#555;margin-top:5px;letter-spacing:.03em}
+.nav-section{padding:14px 0}
+.nav-label{font-size:9px;color:#444;text-transform:uppercase;letter-spacing:.1em;padding:0 20px 8px;font-family:'Syne',sans-serif}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#888;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border-left:2px solid transparent}
+.nav-item:hover{color:#ddd;background:#181818}
+.nav-item.active{color:#36ca37;border-left-color:#36ca37;background:#161616}
+.nav-item .icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.main{margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:50;flex-wrap:wrap}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--muted)}
+.drive-pill{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;border:1px solid var(--border);color:var(--muted);background:var(--bg);cursor:pointer;transition:all .15s}
+.drive-pill.ok{color:#28a829;border-color:var(--green-mid);background:var(--green-light)}
+.drive-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.client-badge{display:flex;align-items:center;gap:7px;background:var(--green-light);border:1px solid var(--green-mid);border-radius:8px;padding:5px 11px;font-size:12px;font-weight:600;color:#28a829}
+.api-bar{display:flex;gap:7px;align-items:center}
+.api-input{border:1px solid var(--border);border-radius:8px;padding:6px 11px;font-size:12px;width:200px;font-family:inherit;color:var(--muted);background:var(--bg)}
+.api-input:focus{outline:none;border-color:#36ca37}
+.content{padding:24px 28px;flex:1;max-width:1280px}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.btn{font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;border:none;border-radius:10px;transition:all .15s;font-size:13px}
+.btn-green{background:#36ca37;color:#fff;padding:9px 20px}
+.btn-green:hover{background:#28a829}
+.btn-green:disabled{background:#ccc;cursor:not-allowed}
+.btn-dark{background:#111;color:#fff;padding:9px 20px;display:flex;align-items:center;gap:8px}
+.btn-dark:hover{background:#333}
+.btn-ghost{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 10px;font-size:11px;font-family:'DM Sans',sans-serif;border-radius:7px;cursor:pointer}
+.btn-ghost:hover{border-color:#36ca37;color:#28a829}
+.sec-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:10px;font-family:'Syne',sans-serif}
+.type-row{display:flex;gap:8px;flex-wrap:wrap}
+.type-btn{border:1.5px solid var(--border);border-radius:10px;padding:9px 16px;cursor:pointer;transition:all .15s;background:var(--surface);font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);display:flex;align-items:center;gap:7px}
+.type-btn:hover:not(.cs){border-color:#36ca37;background:var(--green-light)}
+.type-btn.sel{border-color:#36ca37;background:#36ca37;color:#fff;font-weight:600}
+.type-btn.cs{opacity:.4;cursor:not-allowed}
+.cs-tag{font-size:9px;background:#eee;color:#aaa;border-radius:3px;padding:1px 5px;font-family:'Syne',sans-serif}
+.sub-row{display:flex;gap:7px;flex-wrap:wrap}
+.sub-pill{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;background:var(--surface);font-family:'DM Sans',sans-serif}
+.sub-pill:hover:not(.cs){border-color:#36ca37;color:#28a829}
+.sub-pill.sel{border-color:#36ca37;background:#36ca37;color:#fff;font-weight:600}
+.sub-pill.cs{opacity:.4;cursor:not-allowed;font-size:11px}
+.setup-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:14px;display:flex;flex-direction:column;gap:16px}
+.sel-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.sel-label{font-size:12px;font-weight:600;color:var(--muted)}
+.form-select{border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text)}
+.form-select:focus{outline:none;border-color:#36ca37}
+.input-form{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden}
+.if-header{padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--bg)}
+.if-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.if-body{padding:14px 18px;display:flex;flex-direction:column;gap:10px}
+.ifield{display:flex;flex-direction:column;gap:5px}
+.ifield label{font-size:10px;font-weight:700;color:#28a829;font-family:'Syne',sans-serif;letter-spacing:.04em}
+.ifield textarea{border:1.5px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13px;font-family:'DM Sans',sans-serif;resize:none;background:var(--bg);color:var(--text);line-height:1.5;transition:border .15s}
+.ifield textarea:focus{outline:none;border-color:#36ca37}
+.ifield textarea::placeholder{color:#b8c8b8;font-style:italic}
+.log-banner{background:linear-gradient(135deg,#0f1a0f 0%,#1a2a1a 100%);border-radius:14px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:flex-start;gap:14px;border:1px solid #2a3a2a}
+.lb-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+.lb-h{font-size:12px;color:#ccc;margin-bottom:4px;font-family:'Syne',sans-serif;font-weight:700}
+.lb-last{font-size:12px;color:#36ca37;margin-top:4px;font-style:italic}
+.lb-empty{font-size:12px;color:#555}
+.lb-preview{font-size:12px;color:#777;margin-top:3px;line-height:1.5}
+.split-panel{display:grid;grid-template-columns:1fr 1fr;gap:14px;height:470px}
+.panel{display:flex;flex-direction:column;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden}
+.panel-hdr{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--bg)}
+.panel-ttl{font-size:10px;font-weight:700;font-family:'Syne',sans-serif;color:var(--muted);letter-spacing:.07em}
+.chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:9px}
+.chat-ph{text-align:center;padding:36px 16px;color:var(--muted);font-size:13px;line-height:1.7}
+.bw-u{display:flex;justify-content:flex-end}
+.bw-a{display:flex;justify-content:flex-start}
+.bu{max-width:88%;padding:8px 13px;border-radius:12px 12px 3px 12px;background:#36ca37;color:#fff;font-size:13px;line-height:1.5}
+.ba{max-width:88%;padding:8px 13px;border-radius:12px 12px 12px 3px;background:var(--bg);border:1.5px solid var(--border);font-size:13px;line-height:1.5}
+.chat-ir{padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;background:var(--bg)}
+.chat-ta{flex:1;border:1.5px solid var(--border);border-radius:9px;padding:8px 12px;font-size:13px;font-family:inherit;resize:none;height:52px;background:var(--surface)}
+.chat-ta:focus{outline:none;border-color:#36ca37}
+.send-btn{background:#36ca37;color:#fff;border:none;border-radius:9px;width:42px;height:52px;font-size:17px;cursor:pointer;flex-shrink:0}
+.send-btn:hover{background:#28a829}
+.send-btn:disabled{background:#ccc;cursor:not-allowed}
+.out-body{flex:1;overflow-y:auto;padding:16px;font-size:13px;line-height:1.85;white-space:pre-wrap;color:var(--text)}
+.out-ph{text-align:center;padding:60px 16px;color:var(--muted);font-size:13px;line-height:1.7}
+.tdots{display:flex;gap:4px;align-items:center;padding:9px 12px;background:var(--bg);border:1.5px solid var(--border);border-radius:12px 12px 12px 3px;width:fit-content}
+.tdots span{width:6px;height:6px;background:var(--muted);border-radius:50%;animation:bou .9s infinite}
+.tdots span:nth-child(2){animation-delay:.2s}
+.tdots span:nth-child(3){animation-delay:.4s}
+@keyframes bou{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.pub-bar{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px 18px;margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pub-info{font-size:12px;color:var(--muted);line-height:1.5}
+.pub-info strong{color:var(--text);font-weight:600}
+.pub-acts{display:flex;gap:8px;align-items:center}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:20px}
+.card h4{font-size:11px;color:#28a829;margin-bottom:14px;font-family:'Syne',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.field{margin-bottom:11px}
+.field label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:4px;font-family:'Syne',sans-serif}
+.field input,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;font-size:13px;font-family:inherit;color:var(--text);background:var(--bg);resize:vertical}
+.field input:focus,.field textarea:focus{outline:none;border-color:#36ca37}
+.deal-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px}
+.deal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.deal-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+.dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.btn-del{background:none;border:1px solid #ffcccc;color:#cc3333;border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer;font-family:inherit}
+.btn-del:hover{background:#fff0f0}
+.hist-item{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px;cursor:pointer;transition:border .15s}
+.hist-item:hover{border-color:#36ca37}
+.hist-meta{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.bdg{border-radius:5px;padding:2px 8px;font-size:10px;font-weight:700;font-family:'Syne',sans-serif}
+.bdg-g{background:var(--green-light);color:#28a829}
+.bdg-o{background:#fff3e0;color:#e65c00}
+.bdg-b{background:#e8f0fe;color:#1a56db}
+.bdg-gr{background:#f0f0f0;color:#666}
+.hist-time{font-size:11px;color:var(--muted);margin-left:auto}
+.hist-prev{font-size:12px;color:#555;line-height:1.5;white-space:pre-wrap;max-height:50px;overflow:hidden}
+.hist-item.exp .hist-prev{max-height:none}
+.cfg-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px}
+.cfg-card h4{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:6px}
+.cfg-card p{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+.url-row{display:flex;gap:8px}
+.url-in{flex:1;border:1.5px solid var(--border);border-radius:9px;padding:9px 13px;font-size:13px;font-family:inherit;background:var(--bg)}
+.url-in:focus{outline:none;border-color:#36ca37}
+.toast{position:fixed;bottom:24px;right:24px;background:#111;color:#fff;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:900px){.sidebar{display:none}.main{margin-left:0}.split-panel,.two-col,.dgrid{grid-template-columns:1fr}.split-panel{height:auto}.type-row{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <img src="https://storage.googleapis.com/msgsndr/mVqSBMqHfJCfHF93pDnB/media/6791028c37a1640c985f8b9a.png" alt="CapBloom" onerror="this.style.display='none';document.querySelector('.logo-fallback').style.display='block'">
+    <div class="logo-fallback">CapBloom</div>
+    <div class="tagline">Content Studio</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Create</div>
+    <div class="nav-item active" id="nav-generate" onclick="showTab('generate')"><span class="icon">✨</span> Generate</div>
+    <div class="nav-item" id="nav-history" onclick="showTab('history')"><span class="icon">📋</span> History</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Setup</div>
+    <div class="nav-item" id="nav-brain" onclick="showTab('brain')"><span class="icon">🧠</span> Client Brain</div>
+    <div class="nav-item" id="nav-deals" onclick="showTab('deals')"><span class="icon">🏢</span> Deals</div>
+    <div class="nav-item" id="nav-settings" onclick="showTab('settings')"><span class="icon">⚙️</span> Settings</div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title" id="tabTitle">Generate</div>
+      <div class="drive-pill" id="drivePill" onclick="showTab('settings')">
+        <span class="dot"></span><span id="driveTxt">Drive not connected</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div class="client-badge">🏔️ <span id="clientName">Summit Capital</span></div>
+      <div class="api-bar">
+        <input type="password" class="api-input" id="apiKeyInput" placeholder="sk-ant-... API key">
+        <button class="btn btn-green" style="padding:6px 12px;font-size:12px" onclick="saveKey()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- GENERATE -->
+    <div id="tab-generate" class="tab-content active">
+      <div class="log-banner" id="logBanner">
+        <div class="lb-icon">📅</div>
+        <div>
+          <div class="lb-h">Weekly Memory</div>
+          <div id="logBannerContent"><div class="lb-empty">No previous entries yet — your first publish will be saved automatically.</div></div>
+        </div>
+      </div>
+
+      <div class="setup-card">
+        <div>
+          <div class="sec-label">What are you creating?</div>
+          <div class="type-row">
+            <div class="type-btn sel" id="type-email" onclick="selectType('email')"><span>✉️</span> Investor Email</div>
+            <div class="type-btn" id="type-linkedin" onclick="selectType('linkedin')"><span>💼</span> LinkedIn Post</div>
+            <div class="type-btn cs" id="type-blog"><span>📝</span> Blog Post <span class="cs-tag">soon</span></div>
+            <div class="type-btn cs" id="type-event"><span>🎯</span> Event / Webinar <span class="cs-tag">soon</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="sec-label" id="subLabel">Email Goal</div>
+          <div class="sub-row" id="subRow"></div>
+        </div>
+
+        <div class="sel-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sel-label">Deal:</span>
+            <select class="form-select" id="dealSelect" style="min-width:190px">
+              <option value="">No specific deal</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="sel-label">Audience:</span>
+            <select class="form-select" id="audSelect">
+              <option value="warm-leads">Warm leads</option>
+              <option value="cold">Cold audience</option>
+              <option value="existing">Existing investors</option>
+              <option value="general">General list</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="input-form">
+          <div class="if-header">
+            <span class="if-title" id="formTitle">WEEKLY UPDATE INPUTS</span>
+            <span style="font-size:11px;color:var(--muted)">Fill what you know — skip what you don't</span>
+          </div>
+          <div class="if-body" id="formBody"></div>
+        </div>
+      </div>
+
+      <div class="split-panel">
+        <div class="panel">
+          <div class="panel-hdr">
+            <span class="panel-ttl">💬 CONVERSATION</span>
+            <button class="btn-ghost" onclick="newChat()">New chat</button>
+          </div>
+          <div class="chat-msgs" id="chatMsgs">
+            <div class="chat-ph">Fill in the fields above, then hit ↑ to generate.<br>Reply here to refine the output.</div>
+          </div>
+          <div class="chat-ir">
+            <textarea class="chat-ta" id="chatInput" placeholder="Add a specific angle, or just hit ↑ to generate..." onkeydown="handleKey(event)"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendChat()">↑</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-hdr">
+            <span class="panel-ttl" id="outLabel">📄 OUTPUT</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn-ghost" onclick="copyOut()">📋 Copy</button>
+            </div>
+          </div>
+          <div class="out-body" id="outPanel">
+            <div class="out-ph">Your generated content will appear here.<br>Reply in the chat to refine.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pub-bar">
+        <div class="pub-info" id="pubInfo"><strong>Ready to publish?</strong> Generate content first.</div>
+        <div class="pub-acts">
+          <button class="btn-ghost" onclick="copyOut()">📋 Copy only</button>
+          <button class="btn btn-dark" id="pubBtn" onclick="publishContent()">
+            <span id="pubIcon">🚀</span><span id="pubTxt">Publish to GHL</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div id="tab-history" class="tab-content">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:20px;margin-bottom:4px">Content History</h2>
+        <p style="font-size:13px;color:var(--muted)">All content from this session. Click to expand.</p>
+      </div>
+      <div id="histList"><div style="text-align:center;padding:60px;color:var(--muted)">No content generated yet.</div></div>
+    </div>
+
+    <!-- BRAIN -->
+    <div id="tab-brain" class="tab-content">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div><h2 style="font-size:20px;margin-bottom:4px">Client Brain</h2><p style="font-size:13px;color:var(--muted)">AI reads this on every generation. Save syncs to Drive.</p></div>
+        <button class="btn btn-green" onclick="saveBrainSync()">💾 Save + Sync</button>
+      </div>
+      <div class="two-col">
+        <div class="card"><h4>Company</h4>
+          <div class="field"><label>Company Name</label><input id="b_co" value="Summit Capital"></div>
+          <div class="field"><label>Founders</label><input id="b_founders" value="Todd Silance &amp; Scott"></div>
+          <div class="field"><label>Email Sign-Off</label><input id="b_signoff" value="Scott, Todd, &amp; the Summit Capital Team"></div>
+          <div class="field"><label>Email Greeting</label><input id="b_greeting" value="Hi {{contact.first_name}}," placeholder="e.g. Hi {{contact.first_name}}, / Hey {{contact.first_name}}, / Dear {{contact.first_name}},"></div>
+          <div class="field"><label>Market / Geography</label><input id="b_market" value="Lehigh Valley, PA — multifamily"></div>
+          <div class="field"><label>Website</label><input id="b_web" value="summitcap.co"></div>
+          <div class="field"><label>What We Raise Capital For</label><input id="b_raise" value="Multifamily real estate syndications — 506(b) offerings"></div>
+        </div>
+        <div class="card"><h4>Brand Voice</h4>
+          <div class="field"><label>Tone</label><textarea rows="2" id="b_tone">Professional but approachable. Confident without arrogance. Trusted advisor — not a salesperson.</textarea></div>
+          <div class="field"><label>Analogies</label><textarea rows="2" id="b_analogies">Fitness/discipline. Small business &amp; franchise ownership. Mountain/summit imagery.</textarea></div>
+          <div class="field"><label>Never Say / Avoid</label><textarea rows="2" id="b_avoid">No hashtags. Never "At Summit Capital." Never "I hope this email finds you well." No "Hey LinkedIn Community."</textarea></div>
+        </div>
+        <div class="card"><h4>Ideal Investor (ICP)</h4>
+          <div class="field"><label>Target Investor Profile</label><textarea rows="4" id="b_demo" placeholder="Paste full ICP description here — age, gender, income, occupation, lifestyle, mindset, investing experience...">Busy professional, typically male, 40-60, $200K+ income. Business owners, franchise operators, executives, medical/legal professionals. Accredited investor. Values passive income and tax efficiency.</textarea></div>
+          <div class="field"><label>What They Want</label><textarea rows="2" id="b_goals">Passive income. Generational wealth. Diversify beyond stocks. Replace W-2.</textarea></div>
+          <div class="field"><label>Their Pain Points</label><textarea rows="2" id="b_pain">No time. Complexity of syndications. Fear of not understanding the investment. Stock market volatility.</textarea></div>
+        </div>
+        <div class="card"><h4>Authority & Differentiation</h4>
+          <div class="field"><label>What Makes Us Different</label><textarea rows="3" id="b_diff" placeholder="Your edge — what you do that others don't...">Deep Lehigh Valley market expertise. Neighboring assets in portfolio. Vertically integrated operations. Conservative underwriting.</textarea></div>
+          <div class="field"><label>Social Proof / Track Record</label><textarea rows="3" id="b_proof" placeholder="Deals closed, capital raised, exits, years in business, notable wins...">Valley View — 24-unit multifamily, 75% funded. 2022 appraisal $200K+ above purchase price. Cost segregation delivering 2024 tax savings to investors.</textarea></div>
+          <div class="field"><label>Founder Story / Credibility</label><textarea rows="3" id="b_founder" placeholder="Background that builds authority — career, experience, why you do this...">Todd and Scott bring decades of combined experience in real estate operations and business ownership in the Lehigh Valley market.</textarea></div>
+        </div>
+        <div class="card"><h4>Content Rules</h4>
+          <div class="field"><label>LinkedIn Hashtags</label><input id="b_hash" value="NEVER use hashtags. Not one."></div>
+          <div class="field"><label>LinkedIn Length</label><input id="b_lilen" value="Under 1,200 chars. Storytelling max 1,800."></div>
+          <div class="field"><label>Emoji Policy</label><input id="b_emoji" value="Subject lines only. Never in body or LinkedIn."></div>
+          <div class="field"><label>Other Rules</label><textarea rows="2" id="b_other">Never start with "I". Reader-centric — "you" not "we". One-on-one conversation tone.</textarea></div>
+        </div>
+        <div class="card" style="grid-column:1/-1"><h4>Voice Reference & Sample Content</h4>
+          <p style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6">Paste 2-3 of your best past emails or LinkedIn posts here. The AI will study the tone, length, and style and match it. The closer this is to what you actually want, the better the output.</p>
+          <div class="field"><textarea rows="10" id="b_samples" placeholder="Paste your best past emails or LinkedIn posts here...
+
+Example:
+--- EMAIL 1 ---
+Subject: Something worth 5 minutes of your time
+
+Hi [Name],
+
+I wanted to share something we've been working on...
+
+--- EMAIL 2 ---
+..."></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEALS -->
+    <div id="tab-deals" class="tab-content">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div><h2 style="font-size:20px;margin-bottom:4px">Active Deals</h2><p style="font-size:13px;color:var(--muted)">Edit here — dropdown updates instantly. Syncs to Drive on save.</p></div>
+        <button class="btn btn-green" onclick="saveDealsSync()">💾 Save + Sync</button>
+      </div>
+      <div id="dealsList"></div>
+      <button style="background:var(--green-light);border:1.5px dashed #36ca37;color:#28a829;border-radius:12px;padding:12px;width:100%;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:4px" onclick="addDeal()">+ Add New Deal</button>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="tab-settings" class="tab-content">
+      <div style="margin-bottom:20px"><h2 style="font-size:20px;margin-bottom:4px">Settings</h2><p style="font-size:13px;color:var(--muted)">Configure Drive connection and client details.</p></div>
+
+      <div class="cfg-card">
+        <h4>🔗 Google Drive Connection</h4>
+        <p>Paste the Web App URL from your deployed Google Apps Script. This is how the studio saves and loads data from your client's Drive folder.<br><br><strong>Steps:</strong> Open the Apps Script file → Deploy → New Deployment → Web App → Execute as Me → Anyone → Deploy → Copy URL → Paste below.</p>
+        <div class="url-row">
+          <input class="url-in" id="driveUrlIn" placeholder="https://script.google.com/macros/s/.../exec">
+          <button class="btn btn-green" onclick="saveDriveUrl()">Connect</button>
+        </div>
+        <div id="driveTestMsg" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
+      </div>
+
+      <div class="cfg-card">
+        <h4>👤 Client Name</h4>
+        <p>Displayed in the top bar.</p>
+        <div class="url-row">
+          <input class="url-in" id="settClientName" placeholder="e.g. Summit Capital">
+          <button class="btn btn-green" onclick="saveClientNameSetting()">Save</button>
+        </div>
+      </div>
+
+      <div class="cfg-card">
+        <h4>🔑 Anthropic API Key</h4>
+        <p>Stored only in this browser. Transmitted only to Anthropic's API.</p>
+        <div class="url-row">
+          <input type="password" class="url-in" id="settApiKey" placeholder="sk-ant-...">
+          <button class="btn btn-green" onclick="saveKeySettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="cfg-card" style="border-color:#e8ffe8">
+        <h4>📅 Weekly Log (from Drive)</h4>
+        <div id="settLogPrev" style="font-size:12px;color:var(--muted);line-height:1.7">Connect Drive to view log.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+<div class="toast" id="toastEl"></div>
+
+<script>
+// STATE
+var apiKey = lsG('apiKey') || '';
+var driveUrl = lsG('driveUrl') || 'https://script.google.com/macros/s/AKfycbxaA32wJ784JpJEPz6Uh7eApwv5DnlIV8BGMaqFaSrXwoXZTPfHVniFT1Jo4_mWdmF8/exec';
+var selType = 'email';
+var selSub = 'weekly-update';
+var thread = [];
+var latestOut = '';
+var histItems = [];
+var weeklyLog = [];
+var deals = lsG('deals') || [
+  {id:'valley-view',name:'Valley View',location:'Allentown, PA',type:'24-unit multifamily — 2BR townhomes w/ garages',offering:'506(b)',min:'$50,000',pref:'8%',irr:'14-16%',em:'1.8x-2.0x',funded:'75% funded',description:'Value-add multifamily in Lehigh Valley.',highlights:'Rents 16% below market. 2022 appraisal $200K+ above purchase. Neighboring assets in portfolio. Cost segregation — 2024 tax savings.'},
+  {id:'anytime-fitness',name:'Anytime Fitness',location:'',type:'Fitness franchise',offering:'',min:'',pref:'',irr:'',em:'',funded:'',description:'',highlights:''}
+];
+
+var SUBS = {
+  email:[
+    {id:'weekly-update',lbl:'Weekly Update',cs:false},
+    {id:'deal-update',lbl:'Deal Update',cs:false},
+    {id:'reengage',lbl:'Re-engage',cs:false},
+    {id:'welcome',lbl:'Welcome',cs:true},
+    {id:'milestone',lbl:'Milestone',cs:true},
+    {id:'webinar',lbl:'Webinar Invite',cs:true}
+  ],
+  linkedin:[
+    {id:'authoritative',lbl:'Authoritative / Opinion',cs:false},
+    {id:'educational',lbl:'Educational',cs:false},
+    {id:'personal',lbl:'Personal / Story',cs:false},
+    {id:'deal-spotlight',lbl:'Deal Spotlight',cs:true}
+  ]
+};
+
+var FORMS = {
+  'email:weekly-update':{title:'WEEKLY UPDATE INPUTS',fields:[
+    {k:'market',lbl:'Market / Industry',rows:2,ph:"Fed held rates steady... Lehigh Valley rents up 4%... Real assets story still strong..."},
+    {k:'company',lbl:'Company News',rows:2,ph:"Valley View hit 75% funded... 12 investor calls this month... Phase 1 construction complete..."},
+    {k:'deal',lbl:'Deal Update',rows:2,ph:"2 spots remaining... Closing Q1... Documents being finalized..."},
+    {k:'cta',lbl:'Ask / CTA',rows:1,ph:"Book a 15-min call... Reply with questions... Reserve your spot..."}
+  ]},
+  'email:deal-update':{title:'DEAL UPDATE INPUTS',fields:[
+    {k:'what',lbl:'What happened',rows:2,ph:"Construction milestone hit... New appraisal came in... First distribution sent..."},
+    {k:'numbers',lbl:'Key numbers',rows:1,ph:"$2.1M raised... 8% pref paid on time... Phase 1 100% occupied..."},
+    {k:'meaning',lbl:'What this means for investors',rows:1,ph:"On track for projected returns... Ahead of schedule... Tax benefits confirmed..."},
+    {k:'cta',lbl:'CTA',rows:1,ph:"Reply with questions... Schedule a call..."}
+  ]},
+  'email:reengage':{title:'RE-ENGAGE INPUTS',fields:[
+    {k:'context',lbl:'Who they are / last touchpoint',rows:1,ph:"Downloaded our guide 3 months ago... Attended webinar in January..."},
+    {k:'angle',lbl:'Re-entry angle',rows:2,ph:"New deal just launched... Tax season is a good time to revisit... Something changed since we last spoke..."},
+    {k:'offer',lbl:'Low-friction offer / CTA',rows:1,ph:"No pressure — just a 10-min call... Quick question for you..."}
+  ]},
+  'linkedin:authoritative':{title:'AUTHORITATIVE POST INPUTS',fields:[
+    {k:'stance',lbl:'Your opinion / stance',rows:2,ph:"Most investors wait too long... The #1 mistake is chasing yield not operators..."},
+    {k:'counter',lbl:'Why most people think differently',rows:1,ph:"Everyone thinks they need to time the market..."},
+    {k:'support',lbl:'Supporting point or proof',rows:2,ph:"In 5 years of investing... Valley View is a perfect example..."}
+  ]},
+  'linkedin:educational':{title:'EDUCATIONAL POST INPUTS',fields:[
+    {k:'concept',lbl:'Concept to explain',rows:1,ph:"What is a preferred return... How cost segregation works..."},
+    {k:'why',lbl:'Why it matters to your reader',rows:2,ph:"Most professionals I talk to don't know this... This is why passive investors get paid first..."},
+    {k:'mistake',lbl:'Common misconception',rows:2,ph:"Most people think returns are all that matters..."}
+  ]},
+  'linkedin:personal':{title:'PERSONAL STORY INPUTS',fields:[
+    {k:'story',lbl:'What happened',rows:2,ph:"Met a guy at the gym who's been meaning to invest for 3 years... Call last week shifted my perspective..."},
+    {k:'lesson',lbl:'The lesson',rows:2,ph:"Inaction is a decision... The people who wait for perfect conditions never start..."},
+    {k:'connect',lbl:'Why it matters to investors',rows:1,ph:"If you're still on the sidelines... If you've been asking these same questions..."}
+  ]}
+};
+
+// INIT
+window.onload = function() {
+  if (apiKey) { document.getElementById('apiKeyInput').value = apiKey; document.getElementById('settApiKey').value = apiKey; }
+  var cn = lsG('clientName') || 'Summit Capital';
+  document.getElementById('clientName').textContent = cn;
+  document.getElementById('settClientName').value = cn;
+  if (driveUrl) { document.getElementById('driveUrlIn').value = driveUrl; setDriveStatus(true); loadFromDrive(); }
+  loadBrainUI();
+  renderDeals();
+  renderDealSel();
+  selectType('email');
+};
+
+// TABS
+function showTab(t) {
+  ['generate','history','brain','deals','settings'].forEach(function(x){
+    document.getElementById('tab-'+x).classList.remove('active');
+    document.getElementById('nav-'+x).classList.remove('active');
+  });
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('nav-'+t).classList.add('active');
+  var titles = {generate:'Generate',history:'History',brain:'Client Brain',deals:'Deals',settings:'Settings'};
+  document.getElementById('tabTitle').textContent = titles[t]||t;
+}
+
+// TYPE / SUBTYPE
+function selectType(type) {
+  if (type === selType) return;
+  // Warn if there's an active conversation
+  if (thread.length > 0) {
+    if (!confirm('Switching content type will clear the current conversation.\n\nCopy your content first if you need it.\n\nSwitch anyway?')) return;
+    newChat();
+  }
+  ['email','linkedin','blog','event'].forEach(function(t){ var e=document.getElementById('type-'+t); if(e){e.classList.remove('sel');} });
+  var el = document.getElementById('type-'+type); if(el) el.classList.add('sel');
+  selType = type;
+  var lbl = document.getElementById('subLabel'); if(lbl) lbl.textContent = type==='email'?'Email Goal':'Post Style';
+  var row = document.getElementById('subRow'); if(!row) return;
+  var subs = SUBS[type]||[];
+  row.innerHTML = subs.map(function(s){
+    var cls = 'sub-pill'+(s.cs?' cs':'');
+    var extra = s.cs?' <span style="font-size:10px;opacity:.6">(soon)</span>':'';
+    return '<div class="'+cls+'" id="sub-'+s.id+'"'+(s.cs?'':' onclick="selectSub(\''+s.id+'\')"')+'>'+s.lbl+extra+'</div>';
+  }).join('');
+  var first = subs.find(function(s){return !s.cs;});
+  if(first) selectSub(first.id);
+  updatePubBar();
+}
+
+function selectSub(sub) {
+  var row = document.getElementById('subRow'); if(!row) return;
+  row.querySelectorAll('.sub-pill:not(.cs)').forEach(function(e){e.classList.remove('sel');});
+  var el = document.getElementById('sub-'+sub); if(el) el.classList.add('sel');
+  selSub = sub;
+  renderForm();
+  updatePubBar();
+}
+
+// FORM
+function renderForm() {
+  var key = selType+':'+selSub;
+  var cfg = FORMS[key];
+  var ft = document.getElementById('formTitle');
+  var fb = document.getElementById('formBody');
+  if(!ft||!fb) return;
+  if(!cfg){ ft.textContent='INPUTS'; fb.innerHTML='<div class="ifield"><textarea rows="3" id="fld_gen" placeholder="Describe what you want to write about..."></textarea></div>'; return; }
+  ft.textContent = cfg.title;
+  fb.innerHTML = cfg.fields.map(function(f){
+    return '<div class="ifield"><label>'+f.lbl+'</label><textarea rows="'+f.rows+'" id="fld_'+f.k+'" placeholder="'+f.ph.replace(/"/g,'&quot;')+'"></textarea></div>';
+  }).join('');
+}
+
+function getFormVals() {
+  var key = selType+':'+selSub;
+  var cfg = FORMS[key];
+  if(!cfg){ var e=document.getElementById('fld_gen'); return e?e.value:''; }
+  var parts=[];
+  cfg.fields.forEach(function(f){ var e=document.getElementById('fld_'+f.k); if(e&&e.value.trim()) parts.push(f.lbl+': '+e.value.trim()); });
+  return parts.join('\n');
+}
+
+function clearForm() {
+  var key = selType+':'+selSub;
+  var cfg = FORMS[key];
+  if(!cfg){ var e=document.getElementById('fld_gen'); if(e) e.value=''; return; }
+  cfg.fields.forEach(function(f){ var e=document.getElementById('fld_'+f.k); if(e) e.value=''; });
+}
+
+// PUBLISH BAR
+function updatePubBar() {
+  var info=document.getElementById('pubInfo'), icon=document.getElementById('pubIcon'), txt=document.getElementById('pubTxt');
+  if(!info) return;
+  if(selType==='email'){
+    info.innerHTML='<strong>Publish to:</strong> GHL Email Templates → ready to send to your list.';
+    if(icon) icon.textContent='✉️'; if(txt) txt.textContent='Publish to Email Templates';
+  } else if(selType==='linkedin'){
+    info.innerHTML='<strong>Publish to:</strong> GHL Social Media Planner → scheduled for LinkedIn.';
+    if(icon) icon.textContent='💼'; if(txt) txt.textContent='Publish to Social Planner';
+  }
+}
+
+// DRIVE
+function setDriveStatus(ok) {
+  var p=document.getElementById('drivePill'), t=document.getElementById('driveTxt');
+  if(!p||!t) return;
+  if(ok){ p.classList.add('ok'); t.textContent='Drive connected'; }
+  else{ p.classList.remove('ok'); t.textContent='Drive not connected'; }
+}
+
+function saveDriveUrl() {
+  var url = document.getElementById('driveUrlIn').value.trim();
+  if(!url){ toast('Enter a script URL'); return; }
+  driveUrl=url; lsS('driveUrl',url); setDriveStatus(true);
+  toast('Saved — testing connection...');
+  loadFromDrive();
+}
+
+function driveReq(action, payload) {
+  // JSONP via script tag — bypasses Google Apps Script CORS restriction
+  return new Promise(function(resolve) {
+    if(!driveUrl) { resolve(null); return; }
+    var cbName = 'cbDrive_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+    var data = encodeURIComponent(JSON.stringify(payload||{}));
+    var url = driveUrl + '?action='+action+'&payload='+data+'&callback='+cbName;
+    var script = document.createElement('script');
+
+    var cleanup = function() {
+      delete window[cbName];
+      if(script.parentNode) script.parentNode.removeChild(script);
+    };
+
+    window[cbName] = function(result) { cleanup(); resolve(result); };
+    script.onerror = function() { cleanup(); resolve(null); };
+    setTimeout(function() { if(window[cbName]) { cleanup(); resolve(null); } }, 12000);
+
+    script.src = url;
+    document.head.appendChild(script);
+  });
+}
+
+async function loadFromDrive() {
+  var r = await driveReq('load', {});
+  var msg = document.getElementById('driveTestMsg');
+  if(!r){ if(msg) msg.textContent='Could not connect. Check URL and deployment settings.'; setDriveStatus(false); return; }
+  if(msg) msg.textContent='Connected successfully.'; setDriveStatus(true);
+  if(r.brain) applyBrain(r.brain);
+  if(r.deals && r.deals.length){ deals=r.deals; lsS('deals',deals); renderDeals(); renderDealSel(); }
+  if(r.weeklyLog){ weeklyLog=r.weeklyLog; renderLogBanner(); renderLogSettings(); }
+  toast('Loaded from Drive');
+}
+
+async function saveDrive(data) {
+  if(!driveUrl){ toast('Drive not connected'); return; }
+  var r = await driveReq('save', data);
+  if(r && r.ok) toast('Synced to Drive');
+  else toast('Drive sync failed — check Settings');
+}
+
+// BRAIN
+function getBrain() {
+  function g(id){ var e=document.getElementById(id); return e?e.value:''; }
+  return {company:g('b_co'),founders:g('b_founders'),signoff:g('b_signoff'),greeting:g('b_greeting'),market:g('b_market'),samples:g('b_samples'),website:g('b_web'),raise:g('b_raise'),tone:g('b_tone'),analogies:g('b_analogies'),avoid:g('b_avoid'),icp_demo:g('b_demo'),icp_goals:g('b_goals'),icp_pain:g('b_pain'),differentiators:g('b_diff'),proof:g('b_proof'),founder_story:g('b_founder'),hashtags:g('b_hash'),li_length:g('b_lilen'),emoji:g('b_emoji'),other:g('b_other')};
+}
+
+function applyBrain(b) {
+  var m={b_co:b.company,b_founders:b.founders,b_signoff:b.signoff,b_greeting:b.greeting,b_market:b.market,b_samples:b.samples,b_web:b.website,b_raise:b.raise,b_tone:b.tone,b_analogies:b.analogies,b_avoid:b.avoid,b_demo:b.icp_demo,b_goals:b.icp_goals,b_pain:b.icp_pain,b_diff:b.differentiators,b_proof:b.proof,b_founder:b.founder_story,b_hash:b.hashtags,b_lilen:b.li_length,b_emoji:b.emoji,b_other:b.other};
+  Object.keys(m).forEach(function(id){ var e=document.getElementById(id); if(e&&m[id]!==undefined) e.value=m[id]; });
+}
+
+function loadBrainUI(){ var b=lsG('brain'); if(b) applyBrain(b); }
+async function saveBrainSync(){ var b=getBrain(); lsS('brain',b); await saveDrive({type:'brain',brain:b}); toast('Brain saved + synced'); }
+
+// DEALS
+function renderDeals() {
+  var list=document.getElementById('dealsList'); if(!list) return;
+  if(!deals.length){ list.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted)">No deals yet.</div>'; return; }
+  list.innerHTML = deals.map(function(d,i){
+    function fi(lbl,fld,ph){ return '<div class="field"><label>'+lbl+'</label><input value="'+esc(d[fld]||'')+'" placeholder="'+(ph||'')+'" onchange="updDeal('+i+',\''+fld+'\',this.value)"></div>'; }
+    function ft(lbl,fld,ph){ return '<div class="field" style="grid-column:1/-1"><label>'+lbl+'</label><textarea rows="2" placeholder="'+(ph||'')+'" onchange="updDeal('+i+',\''+fld+'\',this.value)">'+esc(d[fld]||'')+'</textarea></div>'; }
+    return '<div class="deal-card"><div class="deal-hdr"><div class="deal-title" id="dt'+i+'">🏢 '+(d.name||'New Deal')+'</div><button class="btn-del" onclick="delDeal('+i+')">Remove</button></div>'+
+      '<div class="dgrid">'+fi('Name','name')+fi('Location','location','e.g. Allentown, PA')+fi('Type','type','e.g. Multifamily, Franchise')+fi('Offering','offering','e.g. 506(b)')+fi('Min','min','e.g. $50,000')+fi('Pref Return','pref','e.g. 8%')+fi('IRR','irr','e.g. 14-16%')+fi('Equity Multiple','em','e.g. 1.8x')+fi('Status','funded','e.g. 75% funded')+ft('Description','description','')+ft('Why We Love It','highlights','')+'</div></div>';
+  }).join('');
+}
+
+function updDeal(i,f,v){ if(deals[i]){ deals[i][f]=v; if(f==='name'){ var e=document.getElementById('dt'+i); if(e) e.textContent='🏢 '+(v||'New Deal'); } renderDealSel(); } }
+function addDeal(){ deals.push({id:'d'+Date.now(),name:'New Deal',location:'',type:'',offering:'',min:'',pref:'',irr:'',em:'',funded:'',description:'',highlights:''}); renderDeals(); renderDealSel(); }
+function delDeal(i){ if(!confirm('Remove this deal?')) return; deals.splice(i,1); renderDeals(); renderDealSel(); }
+async function saveDealsSync(){ lsS('deals',deals); await saveDrive({type:'deals',deals:deals}); toast('Deals saved + synced'); }
+
+function renderDealSel() {
+  var s=document.getElementById('dealSelect'); if(!s) return;
+  var cur=s.value;
+  s.innerHTML='<option value="">No specific deal</option>';
+  deals.forEach(function(d){ var o=document.createElement('option'); o.value=d.id; o.textContent=d.name+(d.location?' — '+d.location:''); if(d.id===cur) o.selected=true; s.appendChild(o); });
+}
+
+function getSelDeal(){ var id=document.getElementById('dealSelect').value; return deals.find(function(d){return d.id===id;})||null; }
+
+// WEEKLY LOG
+function renderLogBanner() {
+  var el=document.getElementById('logBannerContent'); if(!el) return;
+  if(!weeklyLog.length){ el.innerHTML='<div class="lb-empty">No previous entries yet — your first publish will save automatically.</div>'; return; }
+  var last=weeklyLog[weeklyLog.length-1];
+  var dt=new Date(last.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  var prev=(last.rawInputs||'').substring(0,160);
+  el.innerHTML='<div class="lb-last">Last entry: '+dt+'</div><div class="lb-preview">'+esc(prev)+(prev.length===160?'...':'')+'</div>';
+}
+
+function renderLogSettings() {
+  var el=document.getElementById('settLogPrev'); if(!el) return;
+  if(!weeklyLog.length){ el.textContent='No entries yet.'; return; }
+  el.innerHTML = weeklyLog.slice(-6).reverse().map(function(e){
+    var dt=new Date(e.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    return '<div style="border-bottom:1px solid var(--border);padding:7px 0"><strong>'+dt+'</strong> — '+esc((e.rawInputs||'').substring(0,100))+'...</div>';
+  }).join('');
+}
+
+async function saveLogEntry(rawIn, genOut) {
+  weeklyLog.push({date:new Date().toISOString(),rawInputs:rawIn,generatedContent:genOut,type:selType,subtype:selSub});
+  renderLogBanner(); renderLogSettings();
+  await saveDrive({type:'weeklyLog',weeklyLog:weeklyLog});
+}
+
+function getMemory() {
+  if(!weeklyLog.length) return '';
+  return weeklyLog.slice(-4).map(function(e){
+    return '['+new Date(e.date).toLocaleDateString('en-US',{month:'short',day:'numeric'})+'] '+e.rawInputs;
+  }).join('\n\n');
+}
+
+// SYSTEM PROMPT
+function buildSystem() {
+  var br=getBrain(), deal=getSelDeal(), aud=document.getElementById('audSelect').value, mem=getMemory();
+  var audMap={'warm-leads':'Warm leads — know us, not yet invested','cold':'Cold — discovering us first time','existing':'Existing investors','general':'General list'};
+
+  // LinkedIn system prompt — pulls from Brain fields
+  var li_lines = [
+    'Your role is to act as a LinkedIn ghostwriter for ' + br.company + '.',
+    'Your goal is to craft professional, engaging, and industry-relevant content for ' + br.icp_demo + ' who want ' + br.icp_goals + '.',
+    'All content must align with ' + br.company + ' business interests in a ' + br.tone + ' tone.',
+    '',
+    br.founder_story ? br.founder_story : '',
+    br.differentiators ? ('What makes ' + br.company + ' different: ' + br.differentiators) : '',
+    br.proof ? ('Key proof points and track record: ' + br.proof) : '',
+    br.samples ? ('=== VOICE REFERENCE — MATCH THIS STYLE CLOSELY ===\nStudy the tone, length, sentence structure, and feel of these samples. Write in this voice.\n' + br.samples + '\n=== END VOICE REFERENCE ===') : '',
+    br.raise ? ('They raise capital for: ' + br.raise) : '',
+    '',
+    'You are highly skilled in copywriting, psychology, marketing, and social media strategy.',
+    'You write compelling hooks that stop scrolls on LinkedIn.',
+    'Your tone must feel natural, grounded, and human — never formulaic or exaggerated.',
+    'You understand that customers are buying the engine behind the outcome.',
+    'Trust, authority, and demonstrated results must be emphasized over bold claims.',
+    '',
+    'STRICT LANGUAGE RULES:',
+    '- Eliminate AI speak. NEVER use: hype, clarity, game-changer, unlock, leverage, elevate, or similar overused marketing language.',
+    '- NEVER use contrast formulas like This not that or repeated not this not that phrasing.',
+    '- Avoid exaggerated or dramatic phrasing.',
+    '- Avoid predictable AI-style rhythm patterns.',
+    '- Write in a natural, grounded voice that sounds like an experienced operator speaking to peers.',
+    '',
+    'POST FORMAT RULES:',
+    '- Begin with a strong hook line that stops the scroll.',
+    '- Make the post about the reader. Use You frequently.',
+    '- Keep sentences clean and easy to read.',
+    '- Use short paragraphs. Break up text with spacing.',
+    '- Use lists or bullet points when helpful.',
+    '- Conversational but professional. Never salesy.',
+    '- NEVER use hashtags. Not one.',
+    '- NEVER open with greetings.',
+    '- NEVER start a sentence with At ' + br.company + '.',
+    '- Maximum 1,300 characters.',
+    '',
+    'CONTENT MIX — vary between: Tactical frameworks and workflows, Story-driven authority posts, Objection-handling posts, Strong hook-first posts.',
+    '',
+    'When using examples, reference specific realistic investor profiles based on: ' + br.icp_demo + '. Never vague.',
+    'The writing must feel like it came from a seasoned individual — practical, direct, and credible.'
+  ];
+  var li_system = li_lines.filter(Boolean).join('\n');
+
+  // Email system prompt
+  var greeting = br.greeting || 'Hi {{contact.first_name}},';
+  var email_lines = [
+    'Your role is to act as an email copywriter for ' + br.company + '.',
+    '',
+    'CORE PHILOSOPHY:',
+    'Every email exists to build trust and deepen the relationship with the reader first.',
+    'The goal is never to push or sell — it is to be the most helpful, credible voice in their inbox.',
+    'Emails should feel like a note from a knowledgeable friend who happens to know a lot about investing.',
+    'A call to action may appear at the end, but only when it feels natural — never forced.',
+    'If there is no strong reason for a CTA, leave it out.',
+    '',
+    'AUDIENCE: ' + br.icp_demo,
+    'TONE: ' + br.tone,
+    br.raise ? ('They raise capital for: ' + br.raise) : '',
+    br.proof ? ('Proof points to reference where relevant: ' + br.proof) : '',
+    br.samples ? ('=== VOICE REFERENCE — MATCH THIS STYLE CLOSELY ===\nStudy the tone, length, sentence structure, and feel of these samples. Write in this voice. This is what good looks like for this client.\n' + br.samples + '\n=== END VOICE REFERENCE ===') : '',
+    '',
+    'EMAIL FORMAT — follow this structure exactly:',
+    'Subject: [under 50 characters — specific, curiosity-driven, never clickbait]',
+    '[blank line]',
+    greeting,
+    '[blank line]',
+    '[hook — one punchy sentence that makes them want to keep reading]',
+    '[body — short paragraphs, one idea at a time, builds trust and value]',
+    '[optional CTA — only if it fits naturally. Never pushy.]',
+    '[blank line]',
+    br.signoff,
+    '',
+    'MERGE TAG RULE: ' + greeting + ' is a GHL merge tag. {{contact.first_name}} will be replaced with the real name at send time. NEVER replace it with an actual name. Always use it exactly as written.',
+    '',
+    'STRICT RULES:',
+    '- NEVER start with I hope this email finds you well',
+    '- NEVER start a sentence with I',
+    '- Use You not we — reader-centric always',
+    '- Short paragraphs — 2-3 sentences max',
+    '- Real numbers beat vague claims',
+    '- Specific over generic always',
+    '- NEVER sound salesy or pushy',
+    '- NEVER use sports analogies, dramatic pivots, or hype language',
+    '- NEVER say: swinging for the fences, laser-focused, game-changer, pivot, unlock, leverage, elevate',
+    '- Eliminate AI speak entirely',
+    '- Subdued and professional — confident but never loud',
+    '- If an email feels like a marketing blast, rewrite it as a personal note'
+  ];
+  var email_system = email_lines.filter(Boolean).join('\n');
+
+  var active_system = (selType === 'linkedin') ? li_system : email_system;
+
+  var deal_lines = [];
+  if (deal) {
+    deal_lines.push('=== SELECTED DEAL: ' + deal.name + ' ===');
+    if (deal.location) deal_lines.push('Location: ' + deal.location);
+    if (deal.type) deal_lines.push('Type: ' + deal.type);
+    if (deal.offering) deal_lines.push('Offering: ' + deal.offering);
+    if (deal.min) deal_lines.push('Min investment: ' + deal.min);
+    if (deal.pref) deal_lines.push('Preferred return: ' + deal.pref);
+    if (deal.irr) deal_lines.push('Target IRR: ' + deal.irr);
+    if (deal.em) deal_lines.push('Equity multiple: ' + deal.em);
+    if (deal.funded) deal_lines.push('Status: ' + deal.funded);
+    if (deal.highlights) deal_lines.push('Why we love it: ' + deal.highlights);
+  }
+
+  var parts = [
+    'You are the CapBloom AI Content Studio — expert ghostwriter for capital-raising businesses.',
+    'Output ONLY the final content. No preamble, no explanation, no Here is your post.',
+    '',
+    active_system,
+    '',
+    deal_lines.length ? deal_lines.join('\n') : '',
+    '',
+    mem ? ('=== RECENT LOG — do not repeat these topics ===\n' + mem) : '',
+    '',
+    'AUDIENCE: ' + (audMap[aud] || aud)
+  ];
+
+  return parts.filter(Boolean).join('\n');
+}
+// CHAT
+function buildBrief() {
+  var vals=getFormVals();
+  if(!vals.trim()) return 'Generate great content for the selected type. Follow all rules.';
+  var lbls={'weekly-update':'weekly investor update email','deal-update':'deal update email','reengage':'re-engagement email','authoritative':'authoritative LinkedIn post','educational':'educational LinkedIn post','personal':'personal story LinkedIn post'};
+  var deal=getSelDeal();
+  var brief='Generate a '+(lbls[selSub]||selSub);
+  if(deal) brief+=' featuring '+deal.name;
+  brief+='.\n\nInputs:\n'+vals;
+  return brief;
+}
+
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
+
+function newChat(){
+  thread=[]; latestOut='';
+  document.getElementById('chatMsgs').innerHTML='<div class="chat-ph">Fill in the fields above, then hit ↑ to generate.<br>Reply here to refine the output.</div>';
+  document.getElementById('outPanel').innerHTML='<div class="out-ph">Your generated content will appear here.<br>Reply in the chat to refine.</div>';
+  document.getElementById('outLabel').textContent='📄 OUTPUT';
+  toast('New chat');
+}
+
+function addBub(role,text){
+  var msgs=document.getElementById('chatMsgs');
+  var ph=msgs.querySelector('.chat-ph'); if(ph) ph.remove();
+  var w=document.createElement('div'); w.className=role==='user'?'bw-u':'bw-a';
+  var b=document.createElement('div'); b.className=role==='user'?'bu':'ba'; b.textContent=text;
+  w.appendChild(b); msgs.appendChild(w); msgs.scrollTop=msgs.scrollHeight;
+}
+
+function addTyping(){
+  var msgs=document.getElementById('chatMsgs');
+  var el=document.createElement('div'); el.className='bw-a'; el.id='typing';
+  el.innerHTML='<div class="tdots"><span></span><span></span><span></span></div>';
+  msgs.appendChild(el); msgs.scrollTop=msgs.scrollHeight;
+}
+
+function rmTyping(){ var e=document.getElementById('typing'); if(e) e.remove(); }
+
+async function sendChat() {
+  var key=apiKey||document.getElementById('apiKeyInput').value.trim();
+  if(!key){ toast('Enter your API key first'); return; }
+  var input=document.getElementById('chatInput');
+  var typed=input.value.trim();
+  var isFirst=thread.length===0;
+  var msg=typed||(isFirst?buildBrief():'');
+  if(!msg) return;
+  input.value='';
+  document.getElementById('sendBtn').disabled=true;
+  addBub('user',typed||'Generating from inputs above...');
+  addTyping();
+  thread.push({role:'user',content:msg});
+  try {
+    var r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:buildSystem(),messages:thread})
+    });
+    var d=await r.json();
+    if(d.error) throw new Error(d.error.message);
+    var reply=d.content&&d.content[0]?d.content[0].text:'';
+    thread.push({role:'assistant',content:reply});
+    latestOut=reply;
+    rmTyping();
+    addBub('ai',isFirst?'Generated! See right panel. Reply to refine.':'Updated!');
+    var lbls={email:'✉️ Investor Email',linkedin:'💼 LinkedIn Post'};
+    document.getElementById('outLabel').textContent=lbls[selType]||'📄 OUTPUT';
+    document.getElementById('outPanel').textContent=reply;
+    var deal=getSelDeal();
+    if(isFirst){
+      histItems.unshift({type:selType==='email'?'Investor Email':'LinkedIn Post',sub:selSub,deal:deal?deal.name:null,text:reply,time:new Date()});
+    } else if(histItems.length){ histItems[0].text=reply; }
+    renderHist();
+  } catch(err){ rmTyping(); addBub('ai','Error: '+err.message); }
+  finally{ document.getElementById('sendBtn').disabled=false; document.getElementById('chatInput').focus(); }
+}
+
+// PUBLISH
+async function publishContent() {
+  if(!latestOut){ toast('Generate content first'); return; }
+  var btn=document.getElementById('pubBtn'); btn.disabled=true;
+  document.getElementById('pubTxt').textContent='Publishing...';
+  try {
+    // MCP publish hooks go here — wired when MCP server is configured
+    if(selType==='linkedin'){ toast('LinkedIn post staged for GHL Social Planner — MCP server needed to activate direct publish'); }
+    else if(selType==='email'){ toast('Email staged for GHL Templates — MCP server needed to activate direct publish'); }
+    var rawIn=getFormVals();
+    await saveLogEntry(rawIn, latestOut);
+    toast('Saved to weekly log');
+  } catch(e){ toast('Error: '+e.message); }
+  finally{
+    btn.disabled=false;
+    document.getElementById('pubTxt').textContent=selType==='linkedin'?'Publish to Social Planner':'Publish to Email Templates';
+  }
+}
+
+// HISTORY
+function renderHist(){
+  var list=document.getElementById('histList'); if(!list) return;
+  if(!histItems.length){ list.innerHTML='<div style="text-align:center;padding:60px;color:var(--muted)">No content yet.</div>'; return; }
+  list.innerHTML=histItems.map(function(h,i){
+    var t=h.time.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    var db=h.deal?'<span class="bdg bdg-b">'+h.deal+'</span>':'';
+    return '<div class="hist-item" onclick="this.classList.toggle(\'exp\')">'+
+      '<div class="hist-meta"><span class="bdg bdg-g">'+h.type+'</span><span class="bdg bdg-gr">'+h.sub+'</span>'+db+'<span class="hist-time">'+t+'</span>'+
+      '<button class="btn-ghost" style="margin-left:6px" onclick="event.stopPropagation();cpyIdx('+i+')">Copy</button></div>'+
+      '<div class="hist-prev" id="hp'+i+'">'+esc(h.text)+'</div></div>';
+  }).join('');
+}
+
+function cpyIdx(i){ if(histItems[i]) navigator.clipboard.writeText(histItems[i].text).then(function(){toast('Copied');}); }
+
+// SETTINGS
+function saveKey(){ var k=document.getElementById('apiKeyInput').value.trim(); if(!k){toast('Enter key');return;} apiKey=k; lsS('apiKey',k); toast('API key saved'); }
+function saveKeySettings(){ var k=document.getElementById('settApiKey').value.trim(); if(!k){toast('Enter key');return;} apiKey=k; lsS('apiKey',k); document.getElementById('apiKeyInput').value=k; toast('API key saved'); }
+function saveClientNameSetting(){ var n=document.getElementById('settClientName').value.trim(); if(!n) return; lsS('clientName',n); document.getElementById('clientName').textContent=n; toast('Client name saved'); }
+function copyOut(){ if(!latestOut){toast('Nothing to copy');return;} navigator.clipboard.writeText(latestOut).then(function(){toast('Copied');}); }
+
+// UTILS
+function lsG(k){ try{var v=localStorage.getItem('cb_'+k);return v?JSON.parse(v):null;}catch(e){return null;} }
+function lsS(k,v){ try{localStorage.setItem('cb_'+k,JSON.stringify(v));}catch(e){} }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(m){ var e=document.getElementById('toastEl'); e.textContent=m; e.classList.add('show'); setTimeout(function(){e.classList.remove('show');},2800); }
+</script>
+</body>
+</html>
