@@ -156,6 +156,7 @@ h1,h2,h3,h4,h5{font-family:'Syne',sans-serif}
     <div class="nav-item" id="nav-brain" onclick="showTab('brain')"><span class="icon">🧠</span> Client Brain</div>
     <div class="nav-item" id="nav-deals" onclick="showTab('deals')"><span class="icon">🏢</span> Deals</div>
     <div class="nav-item" id="nav-settings" onclick="showTab('settings')"><span class="icon">⚙️</span> Settings</div>
+    <div class="nav-item" id="nav-prompts" onclick="showTab('prompts')" style="display:none"><span class="icon">✏️</span> Prompts</div>
   </div>
 </aside>
 
@@ -216,6 +217,14 @@ h1,h2,h3,h4,h5{font-family:'Syne',sans-serif}
               <option value="cold">Cold audience</option>
               <option value="existing">Existing investors</option>
               <option value="general">General list</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px" id="lengthRow" style="display:none">
+            <span class="sel-label">Length:</span>
+            <select class="form-select" id="lengthSelect">
+              <option value="short">Short — 3-4 sentences</option>
+              <option value="medium" selected>Medium — 2-3 paragraphs</option>
+              <option value="long">Long — full story</option>
             </select>
           </div>
         </div>
@@ -379,6 +388,34 @@ I wanted to share something we've been working on...
       </div>
     </div>
 
+    <!-- PROMPTS ADMIN TAB -->
+    <div id="tab-prompts" class="tab-content">
+      <div style="margin-bottom:20px">
+        <h2 style="font-size:20px;margin-bottom:4px">Prompt Editor</h2>
+        <p style="font-size:13px;color:var(--muted)">Edit AI instructions directly. Saved to localStorage. Use Reset to restore defaults.</p>
+      </div>
+      <div class="cfg-card">
+        <h4>Email Instructions</h4>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Controls tone, philosophy, format, and rules for every email generated.</p>
+        <textarea id="promptEmail" rows="22" style="width:100%;border:1.5px solid var(--border);border-radius:9px;padding:12px;font-size:12px;font-family:monospace;background:var(--bg);color:var(--text);line-height:1.6;resize:vertical;box-sizing:border-box"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-green" onclick="savePrompt('email')">Save</button>
+          <button class="btn" style="background:var(--surface);border:1.5px solid var(--border);color:var(--muted)" onclick="resetPrompt('email')">Reset to default</button>
+          <span id="promptEmailStatus" style="font-size:11px;color:var(--muted);align-self:center"></span>
+        </div>
+      </div>
+      <div class="cfg-card">
+        <h4>LinkedIn Instructions</h4>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Controls tone, rules, and format for every LinkedIn post generated.</p>
+        <textarea id="promptLinkedin" rows="22" style="width:100%;border:1.5px solid var(--border);border-radius:9px;padding:12px;font-size:12px;font-family:monospace;background:var(--bg);color:var(--text);line-height:1.6;resize:vertical;box-sizing:border-box"></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-green" onclick="savePrompt('linkedin')">Save</button>
+          <button class="btn" style="background:var(--surface);border:1.5px solid var(--border);color:var(--muted)" onclick="resetPrompt('linkedin')">Reset to default</button>
+          <span id="promptLinkedinStatus" style="font-size:11px;color:var(--muted);align-self:center"></span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 </div>
@@ -404,6 +441,7 @@ var SUBS = {
     {id:'weekly-update',lbl:'Weekly Update',cs:false},
     {id:'deal-update',lbl:'Deal Update',cs:false},
     {id:'reengage',lbl:'Re-engage',cs:false},
+    {id:'educational',lbl:'Educational',cs:false},
     {id:'welcome',lbl:'Welcome',cs:true},
     {id:'milestone',lbl:'Milestone',cs:true},
     {id:'webinar',lbl:'Webinar Invite',cs:true}
@@ -434,6 +472,12 @@ var FORMS = {
     {k:'angle',lbl:'Re-entry angle',rows:2,ph:"New deal just launched... Tax season is a good time to revisit... Something changed since we last spoke..."},
     {k:'offer',lbl:'Low-friction offer / CTA',rows:1,ph:"No pressure — just a 10-min call... Quick question for you..."}
   ]},
+  'email:educational':{title:'EDUCATIONAL EMAIL INPUTS',fields:[
+    {k:'concept',lbl:'What are you teaching',rows:2,ph:"What is preferred return... How does cost segregation work... What makes this opportunity different from a REIT..."},
+    {k:'why',lbl:'Why should your investor care',rows:2,ph:"This is what separates investors who keep their money from those who grow it... Most professionals earning $300K+ have never heard of this..."},
+    {k:'truth',lbl:'The real truth / insight',rows:2,ph:"Most sponsors don't explain this because... What the banks won't tell you... The number that actually matters is..."},
+    {k:'cta',lbl:'Optional CTA',rows:1,ph:"Reply if you want to dig deeper... This is exactly what we look for in every deal..."}
+  ]},
   'linkedin:authoritative':{title:'AUTHORITATIVE POST INPUTS',fields:[
     {k:'stance',lbl:'Your opinion / stance',rows:2,ph:"Most investors wait too long... The #1 mistake is chasing yield not operators..."},
     {k:'counter',lbl:'Why most people think differently',rows:1,ph:"Everyone thinks they need to time the market..."},
@@ -454,6 +498,13 @@ var FORMS = {
 // INIT
 window.onload = function() {
   if (apiKey) { document.getElementById('settApiKey').value = apiKey; document.getElementById('keyStatus').innerHTML = '🔑 API key saved'; document.getElementById('keyStatus').style.color='var(--green)'; }
+
+  // Admin mode — add ?admin=true to URL to unlock prompt editor
+  if (window.location.search.indexOf('admin=true') !== -1) {
+    var pn = document.getElementById('nav-prompts');
+    if(pn) pn.style.display = 'flex';
+    loadPromptsIntoEditor();
+  }
   var cn = lsG('clientName') || 'Summit Capital';
   document.getElementById('clientName').textContent = cn;
   document.getElementById('settClientName').value = cn;
@@ -461,32 +512,36 @@ window.onload = function() {
   loadBrainUI();
   renderDeals();
   renderDealSel();
-  selectType('email');
+  selectType('email', true);
 };
 
 // TABS
 function showTab(t) {
-  ['generate','history','brain','deals','settings'].forEach(function(x){
-    document.getElementById('tab-'+x).classList.remove('active');
-    document.getElementById('nav-'+x).classList.remove('active');
+  ['generate','history','brain','deals','settings','prompts'].forEach(function(x){
+    var c=document.getElementById('tab-'+x), n=document.getElementById('nav-'+x);
+    if(c) c.classList.remove('active');
+    if(n) n.classList.remove('active');
   });
   document.getElementById('tab-'+t).classList.add('active');
-  document.getElementById('nav-'+t).classList.add('active');
-  var titles = {generate:'Generate',history:'History',brain:'Client Brain',deals:'Deals',settings:'Settings'};
+  var navEl = document.getElementById('nav-'+t); if(navEl) navEl.classList.add('active');
+  var titles = {generate:'Generate',history:'History',brain:'Client Brain',deals:'Deals',settings:'Settings',prompts:'Prompt Editor'};
   document.getElementById('tabTitle').textContent = titles[t]||t;
+  if(t === 'prompts') loadPromptsIntoEditor();
 }
 
 // TYPE / SUBTYPE
-function selectType(type) {
-  if (type === selType) return;
+function selectType(type, force) {
+  if (type === selType && !force) return;
   // Warn if there's an active conversation
-  if (thread.length > 0) {
+  if (!force && thread.length > 0) {
     if (!confirm('Switching content type will clear the current conversation.\n\nCopy your content first if you need it.\n\nSwitch anyway?')) return;
     newChat();
   }
   ['email','linkedin','blog','event'].forEach(function(t){ var e=document.getElementById('type-'+t); if(e){e.classList.remove('sel');} });
   var el = document.getElementById('type-'+type); if(el) el.classList.add('sel');
   selType = type;
+  var lr = document.getElementById('lengthRow');
+  if(lr) lr.style.display = (type==='email') ? 'flex' : 'none';
   var lbl = document.getElementById('subLabel'); if(lbl) lbl.textContent = type==='email'?'Email Goal':'Post Style';
   var row = document.getElementById('subRow'); if(!row) return;
   var subs = SUBS[type]||[];
@@ -732,51 +787,111 @@ function buildSystem() {
 
   // Email system prompt
   var greeting = br.greeting || 'Hi {{contact.first_name}},';
+  var lengthEl = document.getElementById('lengthSelect');
+  var emailLength = lengthEl ? lengthEl.value : 'medium';
+  var lengthGuide = {
+    short: 'LENGTH: Short — 3 to 4 sentences total. Every word earns its place. No padding.',
+    medium: 'LENGTH: Medium — 2 to 3 short paragraphs. One idea per paragraph. Clean and readable.',
+    long: 'LENGTH: Long — full story. Use narrative, real details, and build to a conclusion. Still no filler.'
+  }[emailLength] || '';
+
   var email_lines = [
-    'Your role is to act as an email copywriter for ' + br.company + '.',
+    'You are writing investor emails for ' + br.company + '.',
     '',
-    'CORE PHILOSOPHY:',
-    'Every email exists to build trust and deepen the relationship with the reader first.',
-    'The goal is never to push or sell — it is to be the most helpful, credible voice in their inbox.',
-    'Emails should feel like a note from a knowledgeable friend who happens to know a lot about investing.',
-    'A call to action may appear at the end, but only when it feels natural — never forced.',
-    'If there is no strong reason for a CTA, leave it out.',
-    '',
+    '=== THE READER ===',
+    'This person worked hard for their money and has options. They did not ask to hear about your business.',
+    'They opened this email because something caught their attention and are giving you 10 seconds to prove it was worth it.',
+    'Before writing, identify which motivation belongs to this reader:',
+    '- Get rich: growth, returns, upside opportunity',
+    '- Stay rich: preservation, safety, consistency',
+    '- Diversify: reduce stock market or real estate concentration',
+    '- Tax efficiency: depreciation, passive losses, cost segregation',
+    '- Feel smart: education, credibility, understanding the space',
     'AUDIENCE: ' + br.icp_demo,
-    'TONE: ' + br.tone,
-    br.raise ? ('They raise capital for: ' + br.raise) : '',
-    br.proof ? ('Proof points to reference where relevant: ' + br.proof) : '',
-    br.samples ? ('=== VOICE REFERENCE — MATCH THIS STYLE CLOSELY ===\nStudy the tone, length, sentence structure, and feel of these samples. Write in this voice. This is what good looks like for this client.\n' + br.samples + '\n=== END VOICE REFERENCE ===') : '',
     '',
-    'EMAIL FORMAT — follow this structure exactly:',
-    'Subject: [under 50 characters — specific, curiosity-driven, never clickbait]',
+    '=== THE WIIFM FILTER ===',
+    'Every sentence must pass this test: Does this serve the reader or the sender?',
+    'If it serves the sender — cut it or rewrite it from the reader perspective.',
+    'The goal of every email is ONE of these. Pick one and do it well:',
+    '- Teach them something they did not know that makes them a smarter investor',
+    '- Show them something real that builds trust in the operator',
+    '- Move them one step closer to wanting to learn more or invest',
+    'Never all three at once. One idea. One email.',
+    '',
+    '=== TRUST IS BUILT THROUGH ===',
+    'Transparency — honest about what is happening, even imperfect things',
+    'Real specifics — actual numbers, actual situations, actual outcomes',
+    'Authenticity — if the client shares something real or vulnerable, use it',
+    'NEVER invented — if you do not have a real detail, do not make one up. Ask instead.',
+    '',
+    '=== WHAT KILLS AN EMAIL INSTANTLY ===',
+    'Talking about what you have been reading',
+    'Generic market commentary they can get anywhere',
+    'Sentences about the operator journey that the reader did not ask about',
+    'Vague claims with no specifics — anything that could be written by anyone about anything',
+    'Starting with I hope this email finds you well',
+    'Sports analogies, dramatic pivots, hype language',
+    'AI speak: game-changer, unlock, leverage, elevate, laser-focused',
+    '',
+    '=== SUBJECT LINE — THE MOST IMPORTANT PART ===',
+    'The subject line is the only thing that gets the email opened. A bad subject kills a great email.',
+    'Never write a subject that announces. Write one that creates a pull.',
+    '',
+    'GREAT subjects do one of these:',
+    '- Open a knowledge gap: What we did not expect / The number that changed our thinking',
+    '- Hint at a reveal without giving it away: Why we stopped chasing apartments / Todd has been doing this for 15 years',
+    '- Create curiosity and self-interest: A different kind of monthly income / Worth 5 minutes of your time',
+    '- Feel personal: Something I want to share with you / Before you make your next move',
+    '',
+    'NEVER write subjects like these:',
+    '- Announcements: We just bought 3 Anytime Fitness gyms — press release, not a hook',
+    '- Vague: Monthly update / Important news / Quick update',
+    '- Salesy: Exclusive opportunity / Do not miss this / Act now',
+    '- Obvious: Anything that summarizes the email instead of creating curiosity about it',
+    '',
+    'Test every subject against this: Does the reader think I want to know what this is about? If not, rewrite it.',
+    '',
+    '=== COPYWRITING RULES — TRANSFORM, DO NOT TRANSCRIBE ===',
+    'You are a copywriter, not a transcriber. The inputs are raw material — facts, updates, ideas.',
+    'Your job is to find the angle, craft the hook, and shape every sentence so a real person would want to read it.',
+    'If the input reads like a press release, the output must not.',
+    'If the input is a bullet list of facts, find the most interesting one and build from there.',
+    'The best hook is rarely the most obvious thing. Look for the unexpected angle.',
+    'Every sentence must earn the next. If a sentence does not pull the reader forward, cut it.',
+    '',
+    '=== FORMAT ===',
+    'Subject: [apply subject line rules above]',
     '[blank line]',
     greeting,
     '[blank line]',
-    '[hook — one punchy sentence that makes them want to keep reading]',
-    '[body — short paragraphs, one idea at a time, builds trust and value]',
-    '[optional CTA — only if it fits naturally. Never pushy.]',
+    '[hook — one sentence that creates a pull, not a summary]',
+    '[body — short paragraphs, one idea at a time, every sentence earns its place]',
+    '[CTA — only if it fits naturally. Never pushy. Leave it out if there is no strong reason.]',
     '[blank line]',
     br.signoff,
     '',
-    'MERGE TAG RULE: ' + greeting + ' is a GHL merge tag. {{contact.first_name}} will be replaced with the real name at send time. NEVER replace it with an actual name. Always use it exactly as written.',
+    lengthGuide,
     '',
-    'STRICT RULES:',
-    '- NEVER start with I hope this email finds you well',
-    '- NEVER start a sentence with I',
-    '- Use You not we — reader-centric always',
-    '- Short paragraphs — 2-3 sentences max',
-    '- Real numbers beat vague claims',
-    '- Specific over generic always',
-    '- NEVER sound salesy or pushy',
-    '- NEVER use sports analogies, dramatic pivots, or hype language',
-    '- NEVER say: swinging for the fences, laser-focused, game-changer, pivot, unlock, leverage, elevate',
-    '- Eliminate AI speak entirely',
-    '- Subdued and professional — confident but never loud',
-    '- If an email feels like a marketing blast, rewrite it as a personal note'
+    'MERGE TAG RULE: ' + greeting + ' is a GHL merge tag. {{contact.first_name}} is replaced with the real name at send time. NEVER replace it with an actual name.',
+    '',
+    '=== CLARIFYING QUESTIONS RULE ===',
+    'If the inputs provided do not give you enough REAL, SPECIFIC information to write a compelling email — do NOT invent details.',
+    'Instead, reply in the conversation with 1 to 3 targeted questions to get what you need before generating.',
+    'Ask only what is essential. Never ask for things already available in the deal or brain context.',
+    'Once you have the answers, generate the email.',
+    '',
+    'TONE: ' + br.tone,
+    br.raise ? ('They raise capital for: ' + br.raise) : '',
+    br.proof ? ('Credibility to reference where relevant: ' + br.proof) : '',
+    br.samples ? ('=== VOICE REFERENCE — MATCH THIS STYLE ===\n' + br.samples + '\n=== END VOICE REFERENCE ===') : ''
   ];
   var email_system = email_lines.filter(Boolean).join('\n');
 
+  // Check for custom prompts saved in admin editor — use those if available
+  var customEmail = lsG(DEFAULT_EMAIL_PROMPT_KEY);
+  var customLi = lsG(DEFAULT_LI_PROMPT_KEY);
+  if(customEmail) email_system = customEmail;
+  if(customLi) li_system = customLi;
   var active_system = (selType === 'linkedin') ? li_system : email_system;
 
   var deal_lines = [];
@@ -808,15 +923,167 @@ function buildSystem() {
 
   return parts.filter(Boolean).join('\n');
 }
+// PROMPT ADMIN
+var DEFAULT_EMAIL_PROMPT_KEY = 'cb_prompt_email';
+var DEFAULT_LI_PROMPT_KEY = 'cb_prompt_linkedin';
+
+function getDefaultEmailPrompt() {
+  // Build the default from current brain so it's always up to date
+  var br = getBrain();
+  var greeting = br.greeting || 'Hi {{contact.first_name}},';
+  var lines = [
+    'You are writing investor emails for ' + br.company + '.',
+    '',
+    '=== THE READER ===',
+    'This person worked hard for their money and has options. They did not ask to hear about your business.',
+    'They opened this email because something caught their attention. They are giving you 10 seconds to prove it was worth it.',
+    'Before writing, identify which motivation belongs to this reader:',
+    '- Get rich: growth, returns, upside opportunity',
+    '- Stay rich: preservation, safety, consistency',
+    '- Diversify: reduce stock market or real estate concentration',
+    '- Tax efficiency: depreciation, passive losses, cost segregation',
+    '- Feel smart: education, credibility, understanding the space',
+    'AUDIENCE: ' + br.icp_demo,
+    '',
+    '=== THE WIIFM FILTER ===',
+    'Every sentence must pass this test: Does this serve the reader or the sender?',
+    'If it serves the sender — cut it or rewrite it from the reader perspective.',
+    'The goal of every email is ONE of these. Pick one and do it well:',
+    '- Teach them something they did not know that makes them a smarter investor',
+    '- Show them something real that builds trust in the operator',
+    '- Move them one step closer to wanting to learn more or invest',
+    'Never all three at once. One idea. One email.',
+    '',
+    '=== TRUST IS BUILT THROUGH ===',
+    'Transparency. Real specifics — actual numbers, actual situations, actual outcomes.',
+    'Authenticity — if the client shares something real or vulnerable, use it.',
+    'NEVER invent details. If you do not have a real fact, ask for it before writing.',
+    '',
+    '=== WHAT KILLS AN EMAIL INSTANTLY ===',
+    'Talking about what you have been reading',
+    'Generic market commentary they can get anywhere',
+    'Sentences about the operator journey the reader did not ask about',
+    'Vague claims with no specifics — anything that could be written by anyone about anything',
+    'I hope this email finds you well',
+    'Sports analogies, dramatic pivots, hype language',
+    'AI speak: game-changer, unlock, leverage, elevate, laser-focused',
+    '',
+    '=== SUBJECT LINE — THE MOST IMPORTANT PART ===',
+    'Never announce. Create a pull. Test every subject: does the reader think I want to know what this is about?',
+    'GREAT: Open a knowledge gap, hint at a reveal, create curiosity + self-interest, feel personal.',
+    'NEVER: Announcements, vague teasers, salesy language, anything that summarizes instead of hooks.',
+    '',
+    '=== COPYWRITING RULES — TRANSFORM, DO NOT TRANSCRIBE ===',
+    'Inputs are raw material. Your job is to find the angle, craft the hook, shape every sentence.',
+    'If the input reads like a press release the output must not. Find the unexpected angle. Every sentence earns the next.',
+    '',
+    '=== FORMAT ===',
+    'Subject: [apply subject line rules above]',
+    '[blank line]',
+    greeting,
+    '[blank line]',
+    '[hook — one sentence that creates a pull, not a summary]',
+    '[body — short paragraphs, one idea at a time, every sentence earns its place]',
+    '[CTA — only if natural. Never pushy. Leave out if no strong reason.]',
+    '[blank line]',
+    br.signoff,
+    '',
+    'MERGE TAG: ' + greeting + ' is a GHL merge tag. NEVER replace {{contact.first_name}} with a real name.',
+    '',
+    '=== CLARIFYING QUESTIONS RULE ===',
+    'If inputs do not give you enough REAL, SPECIFIC detail to write something worth reading — do NOT invent.',
+    'Reply in the conversation with 1-3 targeted questions first. Generate only after you have the answers.',
+    '',
+    'TONE: ' + br.tone
+  ];
+  return lines.filter(function(l){ return l !== undefined && l !== null; }).join('\n');
+}
+
+function getDefaultLiPrompt() {
+  var br = getBrain();
+  var lines = [
+    'Your role is to act as a LinkedIn ghostwriter for ' + br.company + '.',
+    'Write for: ' + br.icp_demo,
+    'They want: ' + br.icp_goals,
+    'Tone: ' + br.tone,
+    '',
+    br.founder_story ? br.founder_story : '',
+    br.differentiators ? ('What makes ' + br.company + ' different: ' + br.differentiators) : '',
+    br.proof ? ('Key proof points: ' + br.proof) : '',
+    br.raise ? ('They raise capital for: ' + br.raise) : '',
+    '',
+    'You are highly skilled in copywriting, psychology, marketing, and social media strategy.',
+    'Write compelling hooks that stop scrolls. Sound natural, grounded, and human — never formulaic.',
+    'Trust, authority, and real results over bold claims.',
+    '',
+    'STRICT LANGUAGE RULES:',
+    'Eliminate AI speak — no hype, clarity, game-changer, unlock, leverage, elevate.',
+    'No contrast formulas like This not that or repeated not this not that phrasing.',
+    'No exaggerated or dramatic phrasing. No predictable AI rhythm patterns.',
+    'Write like an experienced operator speaking to peers.',
+    'NEVER invent facts, stories, or numbers. Only use what the client provides.',
+    '',
+    'POST FORMAT:',
+    'Begin with a strong hook that stops the scroll.',
+    'Make it about the reader. Use You frequently.',
+    'Short paragraphs. Break up text with spacing.',
+    'Conversational but professional. Never salesy.',
+    'NEVER use hashtags. Not one.',
+    'NEVER open with greetings.',
+    'NEVER start a sentence with At ' + br.company + '.',
+    'Maximum 1,300 characters.',
+    '',
+    '=== CLARIFYING QUESTIONS RULE ===',
+    'If inputs lack real specific detail — do NOT invent. Ask 1-2 questions first, then generate.'
+  ];
+  return lines.filter(Boolean).join('\n');
+}
+
+function loadPromptsIntoEditor() {
+  var emailEl = document.getElementById('promptEmail');
+  var liEl = document.getElementById('promptLinkedin');
+  if(emailEl) emailEl.value = lsG(DEFAULT_EMAIL_PROMPT_KEY) || getDefaultEmailPrompt();
+  if(liEl) liEl.value = lsG(DEFAULT_LI_PROMPT_KEY) || getDefaultLiPrompt();
+}
+
+function savePrompt(type) {
+  var key = type === 'email' ? DEFAULT_EMAIL_PROMPT_KEY : DEFAULT_LI_PROMPT_KEY;
+  var el = document.getElementById('prompt' + (type === 'email' ? 'Email' : 'Linkedin'));
+  var statusEl = document.getElementById('prompt' + (type === 'email' ? 'Email' : 'Linkedin') + 'Status');
+  if(!el || !el.value.trim()) { toast('Nothing to save'); return; }
+  lsS(key, el.value.trim());
+  if(statusEl) { statusEl.textContent = 'Saved'; statusEl.style.color = 'var(--green)'; setTimeout(function(){ statusEl.textContent = ''; }, 2000); }
+  toast('Prompt saved');
+}
+
+function resetPrompt(type) {
+  var key = type === 'email' ? DEFAULT_EMAIL_PROMPT_KEY : DEFAULT_LI_PROMPT_KEY;
+  var el = document.getElementById('prompt' + (type === 'email' ? 'Email' : 'Linkedin'));
+  var statusEl = document.getElementById('prompt' + (type === 'email' ? 'Email' : 'Linkedin') + 'Status');
+  if(!confirm('Reset to default? Your edits will be lost.')) return;
+  localStorage.removeItem(key);
+  if(el) el.value = type === 'email' ? getDefaultEmailPrompt() : getDefaultLiPrompt();
+  if(statusEl) { statusEl.textContent = 'Reset to default'; statusEl.style.color = 'var(--muted)'; setTimeout(function(){ statusEl.textContent = ''; }, 2000); }
+  toast('Prompt reset to default');
+}
+
 // CHAT
 function buildBrief() {
   var vals=getFormVals();
-  if(!vals.trim()) return 'Generate great content for the selected type. Follow all rules.';
-  var lbls={'weekly-update':'weekly investor update email','deal-update':'deal update email','reengage':'re-engagement email','authoritative':'authoritative LinkedIn post','educational':'educational LinkedIn post','personal':'personal story LinkedIn post'};
+  var lbls={'weekly-update':'weekly investor update email','deal-update':'deal update email','reengage':'re-engagement email','educational':'educational email','authoritative':'authoritative LinkedIn post','educational':'educational LinkedIn post','personal':'personal story LinkedIn post'};
   var deal=getSelDeal();
-  var brief='Generate a '+(lbls[selSub]||selSub);
+  var brief='I want to generate a '+(lbls[selSub]||selSub);
   if(deal) brief+=' featuring '+deal.name;
-  brief+='.\n\nInputs:\n'+vals;
+  brief+='.';
+  if(vals.trim()) brief+='\n\nHere is what I provided:\n'+vals;
+  brief+='\n\n---\nINSTRUCTIONS FOR YOUR RESPONSE:\n';
+  brief+='If you have enough REAL, SPECIFIC information to write something worth the reader\'s time — start your response with exactly: COPY:\n';
+  brief+='Then write the content immediately after on the next line.\n';
+  brief+='\n';
+  brief+='If critical information is missing and you need to ask before writing — start your response with exactly: QUESTIONS:\n';
+  brief+='Then ask 1-3 short, specific questions. No analysis. No commentary. Just the questions.\n';
+  brief+='\n';
+  brief+='Never do both. Never skip the prefix. COPY: or QUESTIONS: — always one, always first.';
   return brief;
 }
 
@@ -870,17 +1137,29 @@ async function sendChat() {
     if(d.error) throw new Error(d.error.message);
     var reply=d.content&&d.content[0]?d.content[0].text:'';
     thread.push({role:'assistant',content:reply});
-    latestOut=reply;
     rmTyping();
-    addBub('ai',isFirst?'Generated! See right panel. Reply to refine.':'Updated!');
-    var lbls={email:'✉️ Investor Email',linkedin:'💼 LinkedIn Post'};
-    document.getElementById('outLabel').textContent=lbls[selType]||'📄 OUTPUT';
-    document.getElementById('outPanel').textContent=reply;
-    var deal=getSelDeal();
-    if(isFirst){
-      histItems.unshift({type:selType==='email'?'Investor Email':'LinkedIn Post',sub:selSub,deal:deal?deal.name:null,text:reply,time:new Date()});
-    } else if(histItems.length){ histItems[0].text=reply; }
-    renderHist();
+
+    // Route response based on explicit prefix from AI
+    var isQuestions = isFirst && reply.trimStart().indexOf('QUESTIONS:') === 0;
+    var isCopy = reply.trimStart().indexOf('COPY:') === 0;
+    var cleanReply = reply.trimStart().replace(/^(COPY:|QUESTIONS:)\s*/,'').trim();
+
+    if(isQuestions) {
+      // AI is asking — show questions in chat bubble only, output panel untouched
+      addBub('ai', cleanReply);
+    } else {
+      // AI generated copy — confirm in chat, put clean copy in output panel
+      latestOut = cleanReply || reply;
+      addBub('ai', isFirst ? 'Done! See the output panel →  Reply here to refine.' : 'Updated!');
+      var lbls={email:'✉️ Investor Email',linkedin:'💼 LinkedIn Post'};
+      document.getElementById('outLabel').textContent=lbls[selType]||'📄 OUTPUT';
+      document.getElementById('outPanel').textContent=latestOut;
+      var deal=getSelDeal();
+      if(isFirst){
+        histItems.unshift({type:selType==='email'?'Investor Email':'LinkedIn Post',sub:selSub,deal:deal?deal.name:null,text:latestOut,time:new Date()});
+      } else if(histItems.length){ histItems[0].text=latestOut; }
+      renderHist();
+    }
   } catch(err){ rmTyping(); addBub('ai','Error: '+err.message); }
   finally{ document.getElementById('sendBtn').disabled=false; document.getElementById('chatInput').focus(); }
 }
